@@ -1,5 +1,6 @@
 package com.nomadsafe.app.feature.route
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,14 +14,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.background
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,26 +39,36 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nomadsafe.app.core.designsystem.NomadSafeTheme
+import com.nomadsafe.app.domain.model.CandidateRoute
+import com.nomadsafe.app.domain.model.RiskAssessment
 import com.nomadsafe.app.domain.model.RiskLevel
 import com.nomadsafe.app.domain.model.RoutePreference
+import com.nomadsafe.app.domain.model.RouteSegment
 import com.nomadsafe.app.domain.model.SafeRoute
-import kotlin.time.Duration
+import com.nomadsafe.app.domain.repository.DestinationSuggestion
 
 /**
  * Pantalla de Rutas Seguras.
  *
  * ── Comparación explícita entre rutas ─────────────────────────────────────────
- * Se muestran las tres rutas calculadas con su riesgo, su duración y su
- * iluminación, y se marca cuál recomienda la preferencia elegida. Ocultar las
- * alternativas dejaría al usuario sin contexto para decidir: ver que la ruta más
- * segura cuesta 4 minutos más que la más rápida es exactamente la información que
- * permite tomar la decisión consciente. Una recomendación sin comparación es una
- * orden, no una ayuda.
+ * Se muestran todas las candidatas con su riesgo, duración, distancia e
+ * iluminación, marcando cuál recomienda la preferencia elegida.
  *
- * ── El desglose por tramo ─────────────────────────────────────────────────────
- * Cada ruta expande sus tramos críticos. Decir "riesgo alto" sin decir DÓNDE obliga
- * al usuario a adivinar; decirle "la cuadra de Av. España entre X e Y está sin
- * iluminación" es accionable.
+ * Ocultar las alternativas dejaría al usuario sin contexto para decidir. Ver que
+ * la ruta más segura cuesta 4 minutos más que la rápida es exactamente la
+ * información que permite tomar la decisión consciente; una recomendación sin
+ * comparación es una orden, no una ayuda.
+ *
+ * ── El costo en tiempo se muestra SIEMPRE, incluso cuando es cero ─────────────
+ * `extraMinutesVsFastest` se pinta en cada tarjeta. Ocultar el costo temporal de
+ * una decisión de seguridad es la forma más rápida de que el usuario deje de
+ * confiar en la recomendación: si un día descubre por su cuenta que la ruta
+ * "segura" tardaba el doble y la app no se lo dijo, deja de usarla.
+ *
+ * ── Justificación legible ─────────────────────────────────────────────────────
+ * Cada ruta muestra los `reasons` que produjo el motor. Decir "riesgo alto" sin
+ * decir por qué obliga a adivinar; decir "cruzás 3 cuadras sin iluminación en
+ * Av. España" es accionable y, además, enseña qué mira la app.
  */
 @Composable
 fun SafeRouteScreen(
@@ -74,21 +87,60 @@ fun SafeRouteScreen(
     ) {
         Text("Ruta segura", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
 
+        // ── Origen ────────────────────────────────────────────────────────────
+        Text(
+            text = state.originLabel ?: "Desde tu ubicación actual",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
         // ── Destino ───────────────────────────────────────────────────────────
         OutlinedTextField(
             value = destinationQuery,
             onValueChange = { destinationQuery = it },
             label = { Text("¿A dónde vas?") },
-            supportingText = { Text("Se buscan calles y referencias del piloto") },
+            supportingText = { Text("Calles y referencias dentro de la zona del piloto") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
+
         Button(
             onClick = { viewModel.searchDestination(destinationQuery) },
-            enabled = destinationQuery.length >= SEARCH_MIN_LENGTH,
+            enabled = destinationQuery.trim().length >= SEARCH_MIN_LENGTH && !state.isSearching,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Calcular rutas")
+            Text(if (state.isSearching) "Buscando…" else "Buscar destino")
+        }
+
+        // ── Sugerencias de destino ────────────────────────────────────────────
+        // Se muestran sólo cuando hay más de una: con un resultado único el
+        // ViewModel ya lo eligió y calcular las rutas directamente.
+        if (state.suggestions.size > 1) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    "Elegí cuál buscabas",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                state.suggestions.forEach { suggestion ->
+                    SuggestionRow(
+                        suggestion = suggestion,
+                        onClick = {
+                            viewModel.selectSuggestion(suggestion)
+                            destinationQuery = suggestion.name
+                        },
+                    )
+                }
+            }
+        }
+
+        state.destination?.let { destination ->
+            Text(
+                text = "Destino: ${destination.name}",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+            )
         }
 
         // ── Preferencia ───────────────────────────────────────────────────────
@@ -97,11 +149,11 @@ fun SafeRouteScreen(
             onSelect = { viewModel.setPreference(it) },
         )
 
-        // ── Cargando ──────────────────────────────────────────────────────────
         if (state.isLoading) {
-            Box(modifier = Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
+            Box(
+                modifier = Modifier.fillMaxWidth().height(120.dp),
+                contentAlignment = Alignment.Center,
+            ) { CircularProgressIndicator() }
         }
 
         state.error?.let { error ->
@@ -118,22 +170,73 @@ fun SafeRouteScreen(
                 fontWeight = FontWeight.SemiBold,
             )
 
-            state.routes.forEach { route ->
+            state.routes.forEach { safeRoute ->
                 RouteCard(
-                    route = route,
-                    isRecommended = route.id == state.recommendedRouteId,
-                    onSelect = { viewModel.selectRoute(route.id) },
+                    safeRoute = safeRoute,
+                    isRecommended = safeRoute.route.id == state.recommendedRouteId,
+                    isSelected = safeRoute.route.id == state.selectedRouteId,
+                    onSelect = { viewModel.selectRoute(safeRoute.route.id) },
                 )
             }
 
             Spacer(Modifier.height(8.dp))
 
-            Button(
-                onClick = onStartEscort,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = NomadSafeTheme.risk.escortActive),
-            ) {
-                Text("Iniciar escolta en esta ruta")
+            // ── Aviso cuando la recomendada cruza un tramo crítico ────────────
+            // Es el gancho entre esta pantalla y el Modo Escolta: si la mejor ruta
+            // disponible igual pasa por una zona peligrosa, ofrecer la escolta es
+            // lo único que queda por hacer, y decirlo acá es el momento en que el
+            // usuario está decidiendo, no después de que ya salió.
+            val recommended = state.routes.firstOrNull { it.route.id == state.recommendedRouteId }
+            if (recommended?.assessment?.breakdown?.crossesCriticalSegment == true) {
+                Card(colors = CardDefaults.cardColors(containerColor = NomadSafeTheme.risk.critical.copy(alpha = 0.12f))) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            "Incluso la ruta más segura cruza una zona crítica",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = NomadSafeTheme.risk.critical,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Button(
+                            onClick = onStartEscort,
+                            modifier = Modifier.fillMaxWidth().height(52.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = NomadSafeTheme.risk.escortActive),
+                        ) {
+                            Text("Activar escolta para este recorrido")
+                        }
+                    }
+                }
+            } else {
+                Button(
+                    onClick = onStartEscort,
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = NomadSafeTheme.risk.escortActive),
+                ) {
+                    Text("Iniciar escolta en esta ruta")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SuggestionRow(suggestion: DestinationSuggestion, onClick: () -> Unit) {
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(suggestion.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            suggestion.address?.let { address ->
+                Text(
+                    text = address,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            suggestion.distanceFromBiasMeters?.let { meters ->
+                Text(
+                    text = "a ${meters.formatDistance()} de tu posición",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                )
             }
         }
     }
@@ -146,13 +249,14 @@ private fun PreferenceSelector(selected: RoutePreference, onSelect: (RoutePrefer
         Spacer(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             RoutePreference.entries.forEach { preference ->
-                androidx.compose.material3.AssistChip(
+                AssistChip(
                     onClick = { onSelect(preference) },
                     label = { Text(preference.displayName()) },
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(12.dp),
                 )
             }
         }
+        Spacer(Modifier.height(4.dp))
         Text(
             text = selected.explanation(),
             style = MaterialTheme.typography.labelSmall,
@@ -161,15 +265,25 @@ private fun PreferenceSelector(selected: RoutePreference, onSelect: (RoutePrefer
     }
 }
 
+/**
+ * Tarjeta de una ruta evaluada.
+ *
+ * Recibe el [SafeRoute] completo — candidata más evaluación — y no un modelo
+ * aplanado inventado en la UI: los campos que se muestran (`assessment.level`,
+ * `route.durationSeconds`, `reasons`) vienen directamente del motor, así que lo
+ * que se ve es exactamente lo que se calculó.
+ */
 @Composable
-private fun RouteCard(route: SafeRoute, isRecommended: Boolean, onSelect: () -> Unit) {
+private fun RouteCard(
+    safeRoute: SafeRoute,
+    isRecommended: Boolean,
+    isSelected: Boolean,
+    onSelect: () -> Unit,
+) {
+    val candidate: CandidateRoute = safeRoute.route
+    val assessment: RiskAssessment = safeRoute.assessment
     val riskColors = NomadSafeTheme.risk
-    val riskColor = when (route.riskLevel) {
-        RiskLevel.LOW -> riskColors.low
-        RiskLevel.MODERATE -> riskColors.moderate
-        RiskLevel.HIGH -> riskColors.high
-        RiskLevel.CRITICAL -> riskColors.critical
-    }
+    val riskColor = riskColors.forLevel(assessment.level)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -178,8 +292,14 @@ private fun RouteCard(route: SafeRoute, isRecommended: Boolean, onSelect: () -> 
         } else {
             CardDefaults.cardColors()
         },
+        border = if (isSelected) {
+            androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+        } else {
+            null
+        },
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            // ── Encabezado: nivel de riesgo ───────────────────────────────────
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
@@ -189,7 +309,7 @@ private fun RouteCard(route: SafeRoute, isRecommended: Boolean, onSelect: () -> 
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = route.riskLevel.displayName().uppercase(),
+                    text = assessment.level.displayName().uppercase(),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = riskColor,
@@ -205,35 +325,58 @@ private fun RouteCard(route: SafeRoute, isRecommended: Boolean, onSelect: () -> 
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Metric(label = "Distancia", value = route.distanceMeters.formatDistance())
-                Metric(label = "Tiempo", value = route.duration.formatDuration())
-                Metric(label = "Iluminación", value = "${(route.litRatio * 100).toInt()}%")
+            // ── Métricas ──────────────────────────────────────────────────────
+            Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                Metric("Distancia", candidate.distanceMeters.formatDistance())
+                Metric("Tiempo", candidate.durationSeconds.formatSeconds())
+                Metric("Iluminada", candidate.segments.litRatio().formatPercent())
+                Metric("Riesgo", "%.2f".format(assessment.score))
             }
 
+            // ── Costo en tiempo frente a la más rápida ────────────────────────
             Spacer(Modifier.height(8.dp))
             Text(
-                text = route.summary,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = when {
+                    candidate.isFastest -> "Es la ruta más rápida"
+                    safeRoute.extraMinutesVsFastest <= 0 -> "Mismo tiempo que la más rápida"
+                    else -> "+${safeRoute.extraMinutesVsFastest} min que la más rápida"
+                },
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = if (safeRoute.extraMinutesVsFastest > 0) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    riskColors.low
+                },
             )
 
-            // ── Tramos críticos ───────────────────────────────────────────────
-            val critical = route.criticalSegments()
-            if (critical.isNotEmpty()) {
-                Spacer(Modifier.height(12.dp))
+            // ── Justificación del motor ───────────────────────────────────────
+            if (safeRoute.reasons.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                safeRoute.reasons.take(MAX_REASONS_SHOWN).forEach { reason ->
+                    Text(
+                        text = "· ${reason.text}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            // ── Tramos sin iluminación ────────────────────────────────────────
+            val unlit = candidate.segments.filter { it.lit == false }
+            if (unlit.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
                 Text(
-                    text = "Tramos de atención (${critical.size})",
+                    text = "Tramos sin iluminación (${unlit.size})",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = riskColors.high,
                 )
-                critical.take(MAX_CRITICAL_SHOWN).forEach { segment ->
+                unlit.take(MAX_CRITICAL_SHOWN).forEach { segment ->
                     Text(
-                        text = "• ${segment.streetName ?: "Tramo sin nombre"} — " +
-                            segment.reason(),
+                        text = "• ${segment.streetName ?: "Tramo sin nombre"} — ${segment.lengthMeters.toInt()} m",
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.padding(top = 2.dp),
                     )
@@ -241,8 +384,8 @@ private fun RouteCard(route: SafeRoute, isRecommended: Boolean, onSelect: () -> 
             }
 
             Spacer(Modifier.height(12.dp))
-            androidx.compose.material3.OutlinedButton(onClick = onSelect, modifier = Modifier.fillMaxWidth()) {
-                Text("Ver en el mapa")
+            OutlinedButton(onClick = onSelect, modifier = Modifier.fillMaxWidth()) {
+                Text(if (isSelected) "Seleccionada" else "Ver en el mapa")
             }
         }
     }
@@ -258,6 +401,7 @@ private fun Metric(label: String, value: String) {
 
 private const val SEARCH_MIN_LENGTH = 3
 private const val MAX_CRITICAL_SHOWN = 4
+private const val MAX_REASONS_SHOWN = 3
 
 private fun RoutePreference.displayName(): String = when (this) {
     RoutePreference.SAFEST -> "Más segura"
@@ -278,28 +422,48 @@ private fun RiskLevel.displayName(): String = when (this) {
     RiskLevel.CRITICAL -> "Evitar"
 }
 
-private fun Double.formatDistance(): String = when {
-    this < 1000 -> "${this.toInt()} m"
-    else -> "%.1f km".format(this / 1000)
-}
-
-private fun Duration.formatDuration(): String = when {
-    this.inWholeMinutes < 1 -> "menos de 1 min"
-    this.inWholeHours < 1 -> "${this.inWholeMinutes} min"
-    else -> "${this.inWholeHours} h ${this.inWholeMinutes % 60} min"
+private fun com.nomadsafe.app.core.designsystem.RiskColors.forLevel(level: RiskLevel) = when (level) {
+    RiskLevel.LOW -> low
+    RiskLevel.MODERATE -> moderate
+    RiskLevel.HIGH -> high
+    RiskLevel.CRITICAL -> critical
 }
 
 /**
- * Motivo legible por el que un tramo se marca como crítico.
+ * Proporción de tramos con iluminación CONFIRMADA.
  *
- * Se deriva del desglose del motor y no de un umbral arbitrario acá: si la UI
- * inventara su propio criterio, podría decir "sin iluminación" sobre un tramo que
- * el motor penalizó por otra cosa, y el usuario aprendería a desconfiar de la
- * explicación.
+ * `lit == null` (desconocida) no cuenta como iluminada ni como oscura: contarla
+ * como iluminada inflaría el porcentaje y haría ver segura una ruta de la que
+ * simplemente no tenemos datos, que es el sesgo más peligroso posible en una app
+ * de prevención. El denominador son todos los tramos, así que la iluminación
+ * desconocida se refleja como ausencia de confirmación.
  */
-private fun com.nomadsafe.app.domain.model.RouteSegment.reason(): String = when {
-    lit == false -> "${lengthMeters.toInt()} m sin iluminación"
-    lit == null -> "${lengthMeters.toInt()} m con iluminación desconocida"
-    roadClass == com.nomadsafe.app.domain.model.RoadClass.TRUNK -> "${lengthMeters.toInt()} m en vía rápida"
-    else -> "${lengthMeters.toInt()} m de exposición"
+private fun List<RouteSegment>.litRatio(): Double {
+    if (isEmpty()) return 0.0
+    val totalLength = sumOf { it.lengthMeters }
+    if (totalLength <= 0.0) return 0.0
+    // Ponderado por longitud y no por cantidad de tramos: una avenida larga sin luz
+    // importa más que tres callejones cortos iluminados.
+    val litLength = filter { it.lit == true }.sumOf { it.lengthMeters }
+    return litLength / totalLength
+}
+
+private fun Double.formatDistance(): String = when {
+    this < 1000 -> "${toInt()} m"
+    else -> "%.1f km".format(this / 1000)
+}
+
+private fun Double.formatPercent(): String = "${(this * 100).toInt()}%"
+
+/**
+ * Duración desde segundos.
+ *
+ * `CandidateRoute.durationSeconds` es un Int de segundos, no un `Duration`: viene
+ * así del DTO de Mapbox Directions y convertirlo a Duration sólo para formatearlo
+ * agregaría un tipo intermedio sin beneficio.
+ */
+private fun Int.formatSeconds(): String = when {
+    this < 60 -> "menos de 1 min"
+    this < 3600 -> "${this / 60} min"
+    else -> "${this / 3600} h ${(this % 3600) / 60} min"
 }
