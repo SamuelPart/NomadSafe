@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Botón SOS de la pantalla de escolta. Rojo pleno: es el control más
+     importante de toda la app y debe reconocerse sin leer. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <path
+        android:fillColor="#FF3B30"
+        android:pathData="M60,4 A56,56 0 1,1 59.9,4 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M60,26 L66,52 H80 L64,66 L70,92 L60,76 L50,92 L56,66 L40,52 H54 Z" />
+</vector>

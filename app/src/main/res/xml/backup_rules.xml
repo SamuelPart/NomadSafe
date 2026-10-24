@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Qué se respalda en el backup automático de Android.
+
+  Excluimos a propósito todo lo que identifique a la persona o su movimiento:
+  la base Room contiene incidentes reportados y la ubicación del último tramo
+  de escolta. Un backup en la nube del usuario no debería llevar eso, y mucho
+  menos un restore a un dispositivo distinto.
+
+  Ver docs/SECURITY_PRIVACY.md.
+-->
+<full-backup-content>
+    <!-- Preferencias no sensibles (idioma, radio de alertas, onboarding visto). -->
+    <include domain="sharedpref" path="." />
+
+    <!-- Base local: incidentes, contactos y trazas de escolta. NO se respalda. -->
+    <exclude domain="database" path="nomadsafe.db" />
+    <exclude domain="database" path="nomadsafe.db-shm" />
+    <exclude domain="database" path="nomadsafe.db-wal" />
+
+    <!-- DataStore: contiene la sesión de Supabase (access token). NO se respalda. -->
+    <exclude domain="file" path="datastore" />
+
+    <!-- Modelo de Vosk: 40 MB que se pueden re-descargar. NO se respalda. -->
+    <exclude domain="file" path="vosk-model" />
+</full-backup-content>

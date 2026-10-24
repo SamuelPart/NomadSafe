@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English strings. Mirrors values/strings.xml key-for-key; keep both in sync. -->
+<resources>
+    <string name="app_name">NomadSafe</string>
+    <string name="app_tagline">Your city, safer together</string>
+
+    <string name="action_accept">Accept</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_continue">Continue</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_save">Save</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_close">Close</string>
+    <string name="action_back">Back</string>
+    <string name="action_share">Share</string>
+    <string name="state_loading">Loading…</string>
+    <string name="state_offline">Offline. Your data will be saved and sent automatically.</string>
+
+    <string name="nav_map">Map</string>
+    <string name="nav_routes">Routes</string>
+    <string name="nav_alerts">Alerts</string>
+    <string name="nav_profile">Profile</string>
+
+    <string name="auth_title">Verify your number</string>
+    <string name="auth_subtitle">We need your phone number so your trusted contacts can locate you in an emergency.</string>
+    <string name="auth_phone_hint">Mobile number</string>
+    <string name="auth_send_code">Send code</string>
+    <string name="auth_code_hint">6-digit code</string>
+    <string name="auth_verify">Verify</string>
+    <string name="auth_resend">Resend code</string>
+    <string name="auth_error_invalid_phone">Enter a valid number including country code.</string>
+    <string name="auth_error_code">That code is incorrect or has expired.</string>
+
+    <string name="onboarding_location_title">Location</string>
+    <string name="onboarding_location_body">To show incidents near you and compute safe routes.</string>
+    <string name="onboarding_notifications_title">Notifications</string>
+    <string name="onboarding_notifications_body">To warn you about danger in your area even when the app is closed.</string>
+    <string name="onboarding_audio_title">Microphone</string>
+    <string name="onboarding_audio_body">Only for Escort Mode. Audio is processed on your phone and never recorded or uploaded.</string>
+    <string name="onboarding_background_location_title">Background location</string>
+    <string name="onboarding_background_location_body">Required so Escort Mode keeps working with the screen locked. Choose \"Allow all the time\".</string>
+    <string name="onboarding_skip">Not now</string>
+    <string name="onboarding_grant">Allow</string>
+
+    <string name="map_locate_me">My location</string>
+    <string name="map_report_incident">Report incident</string>
+    <string name="map_safe_route">Safe route</string>
+    <string name="map_layers">Layers</string>
+    <string name="map_layer_heatmap">Risk zones</string>
+    <string name="map_layer_incidents">Recent incidents</string>
+    <string name="map_layer_lighting">Street lighting</string>
+    <string name="map_incidents_nearby">%1$d incidents in the last %2$d days</string>
+    <string name="map_empty_state">No reports in this area yet. Be the first to report.</string>
+    <string name="map_risk_low">Quiet area</string>
+    <string name="map_risk_moderate">Be careful</string>
+    <string name="map_risk_high">High-risk area</string>
+
+    <string name="category_theft">Robbery or attempted robbery</string>
+    <string name="category_assault">Assault</string>
+    <string name="category_harassment">Harassment</string>
+    <string name="category_suspicious">Suspicious person or situation</string>
+    <string name="category_dark_street">Unlit street</string>
+    <string name="category_road_blocked">Blocked road</string>
+    <string name="category_accident">Accident</string>
+    <string name="category_other">Other</string>
+
+    <string name="report_title">Report an incident</string>
+    <string name="report_when_now">Happening now</string>
+    <string name="report_when_recent">Happened recently</string>
+    <string name="report_when_past">Happens here often</string>
+    <string name="report_location_confirm">Confirm location</string>
+    <string name="report_add_detail">Details (optional)</string>
+    <string name="report_anonymous">Send anonymously</string>
+    <string name="report_submit">Publish alert</string>
+    <string name="report_success">Alert published. Thank you for looking out for your community.</string>
+    <string name="report_queued">Offline. Your report will be published as soon as there is signal.</string>
+    <string name="report_share_cta">Share with your community</string>
+
+    <string name="route_title">Safe route</string>
+    <string name="route_destination_hint">Where are you going?</string>
+    <string name="route_calculate">Calculate safe route</string>
+    <string name="route_preference_safe">Safest</string>
+    <string name="route_preference_balanced">Balanced</string>
+    <string name="route_preference_fast">Fastest</string>
+    <string name="route_summary">%1$s route · %2$s · %3$s risk</string>
+    <string name="route_longer_than_fastest">%1$d min more than the fastest route</string>
+    <string name="route_why_title">Why this route</string>
+    <string name="route_why_lit">Avoids %1$d unlit segments</string>
+    <string name="route_why_reports">Avoids %1$d zones with recent reports</string>
+    <string name="route_why_escort">We suggest turning on Escort Mode</string>
+    <string name="route_start_escort">Start escort</string>
+
+    <string name="escort_title">Escort Mode</string>
+    <string name="escort_subtitle">We walk with you until you arrive. If something happens, we raise the alarm for you.</string>
+    <string name="escort_start">Turn on escort</string>
+    <string name="escort_stop">End</string>
+    <string name="escort_arrived">I arrived safely</string>
+    <string name="escort_active">Escort active</string>
+    <string name="escort_listening">Listening for emergency words</string>
+    <string name="escort_not_listening">Voice disabled</string>
+    <string name="escort_model_downloading">Preparing voice recognition… %1$d%%</string>
+    <string name="escort_destination">Destination: %1$s</string>
+    <string name="escort_eta">Estimated arrival: %1$s</string>
+    <string name="escort_deviation">You left the route. Are you okay?</string>
+    <string name="escort_checkin">Are you still okay? Tap to confirm.</string>
+    <string name="escort_im_ok">I am okay</string>
+    <string name="escort_sos">SOS</string>
+    <string name="escort_sos_hold">Hold for 3 seconds</string>
+    <string name="escort_sos_triggered">Alert sent to your trusted contacts</string>
+    <string name="escort_panic_word_detected">\"%1$s\" detected. Sending alert…</string>
+    <string name="escort_battery_warning">Battery saver may interrupt the escort. Allow background activity for NomadSafe.</string>
+    <string name="escort_permission_missing">To use Escort Mode you need to allow microphone and location.</string>
+
+    <string name="notification_channel_escort">Escort Mode</string>
+    <string name="notification_channel_escort_desc">Shown while an escort is active.</string>
+    <string name="notification_channel_alerts">Area alerts</string>
+    <string name="notification_channel_alerts_desc">Incidents reported near you.</string>
+    <string name="notification_channel_sos">SOS emergencies</string>
+    <string name="notification_channel_sos_desc">High-priority emergency alerts.</string>
+    <string name="notification_escort_title">Escort active</string>
+    <string name="notification_escort_text">Walking with you to %1$s</string>
+    <string name="notification_escort_text_no_destination">Walking with you</string>
+    <string name="notification_sos_title">SOS activated</string>
+    <string name="notification_sos_text">We notified your trusted contacts with your location</string>
+
+    <string name="contacts_title">Trusted contacts</string>
+    <string name="contacts_subtitle">These people receive your location if you trigger an emergency. Add at least one.</string>
+    <string name="contacts_add">Add contact</string>
+    <string name="contacts_name_hint">Name</string>
+    <string name="contacts_phone_hint">Mobile number</string>
+    <string name="contacts_invite_whatsapp">Invite via WhatsApp</string>
+    <string name="contacts_empty">You have no trusted contacts yet.</string>
+    <string name="contacts_limit">You can have up to %1$d trusted contacts.</string>
+    <string name="contacts_not_installed">WhatsApp was not found on this device.</string>
+
+    <string name="invite_message">Use NomadSafe with me: if I am ever in danger it helps me call for help and notifies my contacts with my live location. Get it here 👉 %1$s</string>
+    <string name="invite_title">Invite someone you care about</string>
+    <string name="invite_body">Escort Mode works better when your contacts have the app too: they can watch your trip live.</string>
+    <string name="invite_reward">Earn %1$d days of premium escort for each person who signs up.</string>
+    <string name="share_alert_message">⚠️ Safety alert in %1$s (%2$s). Reported %3$s ago on NomadSafe. See the map: %4$s</string>
+    <string name="share_area_title">Share the state of your area</string>
+
+    <!-- Emergency messages sent to trusted contacts. Action first: whoever reads
+         this is scared and has seconds. Any polite preamble is harm. -->
+    <string name="sos_message">🚨 EMERGENCY: %1$s triggered their SOS alert on NomadSafe.\n\nLocation: %2$s\nTime: %3$s\nAccuracy: %4$s\n\nCall your local emergency number if you cannot get there.</string>
+    <string name="sos_panic_word_message">🚨 EMERGENCY: NomadSafe detected a voice call for help %1$s and triggered the SOS automatically. Open the link to see the live location.</string>
+    <string name="sos_checkin_message">⚠️ PREVENTIVE ALERT: this person did not answer the Escort Mode check-in on NomadSafe. It may be a false alarm, but worth verifying. Open the link to see their last location.</string>
+    <string name="sos_false_alarm_message">✅ False alarm: %1$s confirmed they are okay. Thank you for being there.</string>
+
+    <string name="error_generic">Something went wrong. Please try again.</string>
+    <string name="error_network">No internet connection.</string>
+    <string name="error_location">We could not get your location. Check that GPS is on.</string>
+    <string name="error_backend">We could not reach the server.</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_privacy">Privacy</string>
+    <string name="settings_privacy_body">Escort Mode audio is processed entirely on your phone. It is never recorded or transmitted. Your location is only shared with your trusted contacts when you trigger an emergency.</string>
+    <string name="settings_alert_radius">Alert radius</string>
+    <string name="settings_delete_account">Delete my account and data</string>
+    <string name="settings_delete_confirm">This permanently erases your account and all your reports.</string>
+    <!-- Map and routes -->
+    <string name="map_risk_summary">%1$d reports in this area</string>
+    <string name="map_no_neighborhood">Neighborhood not identified</string>
+    <string name="action_recenter">Center on my location</string>
+    <string name="action_report">Report an incident</string>
+    <string name="action_share">Share</string>
+    <string name="action_close">Close</string>
+    <string name="tab_routes">Routes</string>
+    <string name="tab_escort">Escort</string>
+</resources>
