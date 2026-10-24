@@ -157,6 +157,16 @@ class TrustContactRepositoryImpl @Inject constructor(
         NsResult.Failure(mapThrowable(throwable))
     }
 
+    /**
+     * Conteo como Flow.
+     *
+     * La pantalla de escolta bloquea el arranque cuando vale cero. Con una lectura
+     * puntual, agregar el primer contacto no desbloquearía el botón hasta
+     * recomponer por otro motivo: el usuario haría exactamente lo que se le pidió y
+     * vería el botón seguir deshabilitado.
+     */
+    override fun observeCount(): Flow<Int> = dao.observeCount()
+
     override suspend fun hasAnyContact(): Boolean = dao.count() > 0
 
     private companion object {
@@ -382,7 +392,7 @@ class EscortRepositoryImpl @Inject constructor(
     }
 
     override suspend fun recordCheckIn(sessionId: String): NsResult<Unit> = try {
-        dao.updateLocation(sessionId, 0.0, 0.0, timeProvider.now())
+        dao.recordCheckIn(sessionId, timeProvider.now())
         NsResult.Success(Unit)
     } catch (cancellation: kotlinx.coroutines.CancellationException) {
         throw cancellation
@@ -496,6 +506,41 @@ class EscortRepositoryImpl @Inject constructor(
 
     override fun observeSosHistory(limit: Int): Flow<List<SosEvent>> =
         dao.observeSosHistory(limit).map { entities -> entities.map { it.toDomain() } }
+
+    override fun observeActiveSos(): Flow<SosEvent?> =
+        dao.observeActiveSos().map { it?.toDomain() }
+
+    /**
+     * Cierra un SOS como falsa alarma o resuelto.
+     *
+     * Se encola como crítico igual que el disparo: si el cierre no llega al
+     * servidor, los contactos siguen viendo una emergencia activa y pueden estar
+     * yendo hacia una ubicación donde ya no hay nadie. Un cierre perdido es tan
+     * dañino como un disparo perdido, sólo que en dirección opuesta.
+     */
+    override suspend fun resolveSos(sosId: String, note: String?): NsResult<Unit> = try {
+        dao.updateSosStatus(sosId, SosStatus.RESOLVED.wireName)
+        outbox.enqueue(
+            table = TABLE_SOS,
+            operation = OutboxOperation.PATCH,
+            payload = json.encodeToString(
+                JsonObject.serializer(),
+                buildJsonObject {
+                    put("status", SosStatus.RESOLVED.wireName)
+                    put("resolved_at", timeProvider.now().toString())
+                    note?.let { put("resolution_note", it) }
+                },
+            ),
+            filter = "id=eq.$sosId",
+            isCritical = true,
+        )
+        NsLog.i(TAG, "SOS $sosId resuelto")
+        NsResult.Success(Unit)
+    } catch (cancellation: kotlinx.coroutines.CancellationException) {
+        throw cancellation
+    } catch (throwable: Throwable) {
+        NsResult.Failure(mapThrowable(throwable))
+    }
 
     private companion object {
         const val TAG = "EscortRepository"

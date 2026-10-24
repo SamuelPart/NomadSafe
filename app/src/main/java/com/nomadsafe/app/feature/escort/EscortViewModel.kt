@@ -110,7 +110,7 @@ class EscortViewModel @Inject constructor(
                 escortRepository.observeActiveSession(),
                 escortRepository.observeActiveSos(),
                 escortRepository.observeSosHistory(limit = HISTORY_LIMIT),
-                contactRepository.count(),
+                contactRepository.observeCount(),
             ) { session, sos, history, contactCount ->
                 EscortScreenUiState(
                     activeSession = session,
@@ -190,11 +190,19 @@ class EscortViewModel @Inject constructor(
         }
     }
 
-    fun stopEscort(reason: String = "Usuario finalizó la escolta") {
+    /**
+     * Finaliza la escolta por decisión del usuario.
+     *
+     * Usa [EscortStatus.COMPLETED] y no CANCELLED: cancelar implicaría que la
+     * escolta no cumplió su ciclo, y el historial debe distinguir "terminé de
+     * caminar" de "la corté a la mitad", que es señal relevante si después hay que
+     * auditar por qué un recorrido quedó sin cierre.
+     */
+    fun stopEscort() {
         viewModelScope.launch {
             val sessionId = _uiState.value.activeSession?.id ?: return@launch
             EscortForegroundService.sendAction(appContext(), EscortForegroundService.ACTION_STOP)
-            escortRepository.endSession(sessionId, reason)
+            escortRepository.endSession(sessionId, EscortStatus.COMPLETED)
         }
     }
 

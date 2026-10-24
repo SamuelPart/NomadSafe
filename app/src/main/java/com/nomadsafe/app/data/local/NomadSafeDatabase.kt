@@ -305,6 +305,10 @@ interface TrustContactDao {
 
     @Query("UPDATE trust_contacts SET is_nomadsafe_user = 1 WHERE id = :id")
     suspend fun markAsNomadSafeUser(id: String)
+
+    /** Conteo reactivo: la pantalla de escolta bloquea el arranque si vale 0. */
+    @Query("SELECT COUNT(*) FROM trust_contacts")
+    fun observeCount(): Flow<Int>
 }
 
 @Dao
@@ -329,6 +333,25 @@ interface EscortDao {
         """,
     )
     suspend fun updateLocation(id: String, lat: Double, lon: Double, checkIn: kotlinx.datetime.Instant?)
+
+    /**
+     * Estampa el check-in SIN tocar la posición.
+     *
+     * Reemplaza el uso de `updateLocation(id, 0.0, 0.0, now)`, que escribía
+     * lat/lon 0 y dejaba la última posición conocida en el Golfo de Guinea: el
+     * contacto que mira el seguimiento durante una emergencia veía a la persona
+     * desaparecer del continente.
+     *
+     * Asigna incondicionalmente (no COALESCE) porque un check-in posterior debe
+     * sobreescribir al anterior; con COALESCE sólo se registraba el primero y la
+     * cuenta regresiva del siguiente partía siempre del mismo timestamp.
+     */
+    @Query("UPDATE escort_sessions SET last_check_in_at = :checkIn WHERE id = :id")
+    suspend fun recordCheckIn(id: String, checkIn: kotlinx.datetime.Instant)
+
+    /** SOS abierto más reciente, si hay alguno. */
+    @Query("SELECT * FROM sos_events WHERE status IN ('open','acknowledged') ORDER BY triggered_at DESC LIMIT 1")
+    fun observeActiveSos(): Flow<SosEventEntity?>
 
     @Query("SELECT * FROM sos_events ORDER BY triggered_at DESC LIMIT :limit")
     fun observeSosHistory(limit: Int): Flow<List<SosEventEntity>>
