@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  NomadSafe — AndroidManifest
+
+  Los permisos de esta app son sensibles y Play Store los revisa con lupa.
+  Cada uno tiene una justificación funcional en docs/SECURITY_PRIVACY.md,
+  que es el documento que se adjunta en el formulario de permisos de la consola.
+
+  Tres decisiones no obvias:
+
+  1. FOREGROUND_SERVICE_MICROPHONE + foregroundServiceType="microphone|location"
+     Android 14 (API 34) exige declarar el tipo y tener el permiso runtime YA
+     concedido ANTES de startForeground(). Si el orden se invierte, el sistema
+     lanza SecurityException y el Modo Escolta muere justo cuando más falta hace.
+     EscortViewModel pide RECORD_AUDIO antes de arrancar el servicio.
+
+  2. android:stopWithTask="false" en el servicio
+     Sin esto, deslizar la app fuera de Recientes mata el servicio de escolta.
+     Un usuario que apaga la escolta por accidente y no se da cuenta es el peor
+     fallo posible de este producto.
+
+  3. ACCESS_BACKGROUND_LOCATION se declara pero se pide en una pantalla propia
+     (nunca junto a los de primer plano). Google Play exige ese flujo separado
+     y además la tasa de aceptación sube cuando el usuario entiende para qué.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Red: Supabase (HTTPS + WebSocket Realtime), Mapbox tiles, descarga del modelo Vosk. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Ubicación: el núcleo del producto. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Necesario para el Modo Escolta con pantalla bloqueada. Solicitud diferida. -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+
+    <!-- Audio: detección offline de palabras de pánico. Nunca sale del dispositivo. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- Foreground service del Modo Escolta (Android 14 exige el tipo específico). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+
+    <!-- Alerta SOS: notificación persistente, vibración y wakelock parcial. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Contexto de riesgo: distinguir caminando/en vehículo cambia el umbral de SOS. -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+
+    <!-- Características del dispositivo. required="false" para no excluir tablets
+         ni dispositivos sin micrófono del listado de Play. -->
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <uses-feature android:name="android.hardware.telephony" android:required="false" />
+
+    <!-- Visibilidad de paquetes (Android 11+). Sin <queries>, resolveActivity
+         devuelve null para WhatsApp aunque esté instalado y el loop de invitación
+         se rompe en silencio. -->
+    <queries>
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="text/plain" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+        </intent>
+    </queries>
+
+    <application
+        android:name=".NomadSafeApplication"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.NomadSafe"
+        android:enableOnBackInvokedCallback="true"
+        tools:targetApi="34">
+
+        <!-- singleTask: una alerta push debe traer al frente la instancia existente,
+             no crear una segunda actividad con su propio estado del mapa. -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.NomadSafe.Splash"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Deep link de invitación: https://nomadsafe.app/i/CODIGO
+                 y esquema propio nomadsafe://invite/CODIGO. Ambos llevan al
+                 flujo de alta con el referente precargado (loop de crecimiento). -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="nomadsafe.app" android:pathPrefix="/i/" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="nomadsafe" android:host="invite" />
+            </intent-filter>
+        </activity>
+
+        <!-- Modo Escolta. stopWithTask=false es deliberado: ver comentario de cabecera. -->
+        <service
+            android:name=".feature.escort.EscortForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="location|microphone"
+            android:stopWithTask="false" />
+
+        <!-- Trabajo diferido: vaciar el outbox de reportes creados sin conexión. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <!-- WorkManager se inicializa on-demand desde NomadSafeApplication
+                 para poder inyectarle el HiltWorkerFactory. -->
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+    </application>
+
+</manifest>

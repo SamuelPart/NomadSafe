@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Idioma por defecto del piloto (Perú). La traducción al inglés vive en values-en/.
+  Regla de la casa: NUNCA hardcodear texto en un Composable. Todo string visible
+  pasa por aquí, porque la app va a crecer a otros mercados de LATAM y porque
+  los textos de emergencia se revisan con cuidado legal.
+-->
+<resources>
+    <string name="app_name">NomadSafe</string>
+    <string name="app_tagline">Tu ciudad, más segura juntos</string>
+
+    <!-- ── Comunes ─────────────────────────────────────────────────────────── -->
+    <string name="action_accept">Aceptar</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_continue">Continuar</string>
+    <string name="action_retry">Reintentar</string>
+    <string name="action_save">Guardar</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="action_close">Cerrar</string>
+    <string name="action_back">Volver</string>
+    <string name="action_share">Compartir</string>
+    <string name="state_loading">Cargando…</string>
+    <string name="state_offline">Sin conexión. Tus datos se guardarán y enviarán automáticamente.</string>
+
+    <!-- ── Navegación ──────────────────────────────────────────────────────── -->
+    <string name="nav_map">Mapa</string>
+    <string name="nav_routes">Rutas</string>
+    <string name="nav_alerts">Alertas</string>
+    <string name="nav_profile">Perfil</string>
+
+    <!-- ── Auth ────────────────────────────────────────────────────────────── -->
+    <string name="auth_title">Verificá tu número</string>
+    <string name="auth_subtitle">Necesitamos tu teléfono para que tus contactos de confianza puedan ubicarte en una emergencia.</string>
+    <string name="auth_phone_hint">Número de celular</string>
+    <string name="auth_send_code">Enviar código</string>
+    <string name="auth_code_hint">Código de 6 dígitos</string>
+    <string name="auth_verify">Verificar</string>
+    <string name="auth_resend">Reenviar código</string>
+    <string name="auth_error_invalid_phone">Ingresá un número válido con código de país.</string>
+    <string name="auth_error_code">El código no es correcto o venció.</string>
+
+    <!-- ── Onboarding y permisos ───────────────────────────────────────────── -->
+    <string name="onboarding_location_title">Ubicación</string>
+    <string name="onboarding_location_body">Para mostrar incidentes cerca tuyo y calcular rutas seguras.</string>
+    <string name="onboarding_notifications_title">Notificaciones</string>
+    <string name="onboarding_notifications_body">Para avisarte de un peligro en tu zona aunque la app esté cerrada.</string>
+    <string name="onboarding_audio_title">Micrófono</string>
+    <string name="onboarding_audio_body">Sólo para el Modo Escolta. El audio se procesa en tu teléfono y nunca se graba ni se sube.</string>
+    <string name="onboarding_background_location_title">Ubicación en segundo plano</string>
+    <string name="onboarding_background_location_body">Necesario para que el Modo Escolta siga funcionando con la pantalla bloqueada. Seleccioná \"Permitir todo el tiempo\".</string>
+    <string name="onboarding_skip">Ahora no</string>
+    <string name="onboarding_grant">Permitir</string>
+
+    <!-- ── Mapa ────────────────────────────────────────────────────────────── -->
+    <string name="map_locate_me">Mi ubicación</string>
+    <string name="map_report_incident">Reportar incidente</string>
+    <string name="map_safe_route">Ruta segura</string>
+    <string name="map_layers">Capas</string>
+    <string name="map_layer_heatmap">Zonas de riesgo</string>
+    <string name="map_layer_incidents">Incidentes recientes</string>
+    <string name="map_layer_lighting">Iluminación</string>
+    <string name="map_incidents_nearby">%1$d incidentes en los últimos %2$d días</string>
+    <string name="map_empty_state">Todavía no hay reportes en esta zona. Sé el primero en reportar.</string>
+    <string name="map_risk_low">Zona tranquila</string>
+    <string name="map_risk_moderate">Precaución</string>
+    <string name="map_risk_high">Zona de riesgo</string>
+
+    <!-- ── Categorías de incidente ─────────────────────────────────────────── -->
+    <string name="category_theft">Robo o intento de robo</string>
+    <string name="category_assault">Agresión</string>
+    <string name="category_harassment">Acoso</string>
+    <string name="category_suspicious">Persona o situación sospechosa</string>
+    <string name="category_dark_street">Calle sin iluminación</string>
+    <string name="category_road_blocked">Vía bloqueada</string>
+    <string name="category_accident">Accidente</string>
+    <string name="category_other">Otro</string>
+
+    <!-- ── Reporte ─────────────────────────────────────────────────────────── -->
+    <string name="report_title">Reportar incidente</string>
+    <string name="report_when_now">Está pasando ahora</string>
+    <string name="report_when_recent">Pasó hace poco</string>
+    <string name="report_when_past">Sucede seguido acá</string>
+    <string name="report_location_confirm">Confirmar ubicación</string>
+    <string name="report_add_detail">Detalle (opcional)</string>
+    <string name="report_anonymous">Enviar de forma anónima</string>
+    <string name="report_submit">Publicar alerta</string>
+    <string name="report_success">Alerta publicada. Gracias por cuidar a tu comunidad.</string>
+    <string name="report_queued">Sin conexión. Tu reporte se publicará en cuanto haya señal.</string>
+    <string name="report_share_cta">Compartir con tu comunidad</string>
+
+    <!-- ── Rutas seguras ───────────────────────────────────────────────────── -->
+    <string name="route_title">Ruta segura</string>
+    <string name="route_destination_hint">¿A dónde vas?</string>
+    <string name="route_calculate">Calcular ruta segura</string>
+    <string name="route_preference_safe">Más segura</string>
+    <string name="route_preference_balanced">Equilibrada</string>
+    <string name="route_preference_fast">Más rápida</string>
+    <string name="route_summary">Ruta %1$s · %2$s · riesgo %3$s</string>
+    <string name="route_longer_than_fastest">%1$d min más que la ruta más rápida</string>
+    <string name="route_why_title">Por qué esta ruta</string>
+    <string name="route_why_lit">Evita %1$d tramos sin iluminación reportada</string>
+    <string name="route_why_reports">Evita %1$d zonas con reportes recientes</string>
+    <string name="route_why_escort">Te sugerimos activar el Modo Escolta</string>
+    <string name="route_start_escort">Iniciar escolta</string>
+
+    <!-- ── Modo Escolta ────────────────────────────────────────────────────── -->
+    <string name="escort_title">Modo Escolta</string>
+    <string name="escort_subtitle">Te acompañamos mientras llegás. Si algo pasa, avisamos por vos.</string>
+    <string name="escort_start">Activar escolta</string>
+    <string name="escort_stop">Finalizar</string>
+    <string name="escort_arrived">Llegué bien</string>
+    <string name="escort_active">Escolta activa</string>
+    <string name="escort_listening">Escuchando palabras de emergencia</string>
+    <string name="escort_not_listening">Voz desactivada</string>
+    <string name="escort_model_downloading">Preparando reconocimiento de voz… %1$d%%</string>
+    <string name="escort_destination">Destino: %1$s</string>
+    <string name="escort_eta">Llegada estimada: %1$s</string>
+    <string name="escort_deviation">Te saliste de la ruta. ¿Estás bien?</string>
+    <string name="escort_checkin">¿Sigues bien? Tocá para confirmar.</string>
+    <string name="escort_im_ok">Estoy bien</string>
+    <string name="escort_sos">SOS</string>
+    <string name="escort_sos_hold">Mantené presionado 3 segundos</string>
+    <string name="escort_sos_triggered">Alerta enviada a tus contactos de confianza</string>
+    <string name="escort_panic_word_detected">Se detectó \"%1$s\". Enviando alerta…</string>
+    <string name="escort_battery_warning">El ahorro de batería puede interrumpir la escolta. Permití la actividad en segundo plano para NomadSafe.</string>
+    <string name="escort_permission_missing">Para usar el Modo Escolta necesitás permitir el micrófono y la ubicación.</string>
+
+    <!-- Notificaciones del servicio en primer plano -->
+    <string name="notification_channel_escort">Modo Escolta</string>
+    <string name="notification_channel_escort_desc">Se muestra mientras la escolta está activa.</string>
+    <string name="notification_channel_alerts">Alertas de tu zona</string>
+    <string name="notification_channel_alerts_desc">Incidentes reportados cerca de ti.</string>
+    <string name="notification_channel_sos">Emergencias SOS</string>
+    <string name="notification_channel_sos_desc">Alertas de emergencia de alta prioridad.</string>
+    <string name="notification_escort_title">Escolta activa</string>
+    <string name="notification_escort_text">Te estamos acompañando hasta %1$s</string>
+    <string name="notification_escort_text_no_destination">Te estamos acompañando</string>
+    <string name="notification_sos_title">SOS activado</string>
+    <string name="notification_sos_text">Avisamos a tus contactos de confianza con tu ubicación</string>
+
+    <!-- ── Contactos de confianza ──────────────────────────────────────────── -->
+    <string name="contacts_title">Contactos de confianza</string>
+    <string name="contacts_subtitle">Son quienes reciben tu ubicación si activás una emergencia. Agregá al menos uno.</string>
+    <string name="contacts_add">Agregar contacto</string>
+    <string name="contacts_name_hint">Nombre</string>
+    <string name="contacts_phone_hint">Celular</string>
+    <string name="contacts_invite_whatsapp">Invitar por WhatsApp</string>
+    <string name="contacts_empty">Todavía no tenés contactos de confianza.</string>
+    <string name="contacts_limit">Podés tener hasta %1$d contactos de confianza.</string>
+    <string name="contacts_not_installed">No se encontró WhatsApp en este dispositivo.</string>
+
+    <!-- ── Loops de crecimiento ────────────────────────────────────────────── -->
+    <string name="invite_message">Usá NomadSafe conmigo: si algún día estoy en peligro, me ayuda a pedir auxilio y avisa a mis contactos con mi ubicación en tiempo real. Descargala acá 👉 %1$s</string>
+    <string name="invite_title">Invitá a alguien que te importe</string>
+    <string name="invite_body">El Modo Escolta funciona mejor cuando tus contactos también tienen la app: ven tu recorrido en vivo.</string>
+    <string name="invite_reward">Ganás %1$d días de escolta premium por cada persona que se registre.</string>
+    <string name="share_alert_message">⚠️ Alerta de seguridad en %1$s (%2$s). Reportado hace %3$s en NomadSafe. Mirá el mapa: %4$s</string>
+    <string name="share_area_title">Compartí el estado de tu zona</string>
+
+    <!-- Mensajes de emergencia enviados a contactos de confianza.
+         Van al grano y ponen la acción primero: quien los recibe está asustado y
+         tiene segundos. Cualquier preámbulo cortés es daño.
+         Ver docs/GROWTH_LOOPS.md y feature/growth/GrowthContent.kt. -->
+    <string name="sos_message">🚨 EMERGENCIA: %1$s activó su alerta SOS en NomadSafe.\n\nUbicación: %2$s\nHora: %3$s\nPrecisión: %4$s\n\nLlamá al 105 (PNP) o al 117 si no podés acudir.</string>
+    <string name="sos_panic_word_message">🚨 EMERGENCIA: NomadSafe detectó un pedido de auxilio por voz %1$s y activó el SOS automáticamente. Abrí el link para ver la ubicación en vivo.</string>
+    <string name="sos_checkin_message">⚠️ ALERTA PREVENTIVA: la persona no respondió la confirmación del Modo Escolta de NomadSafe. Puede ser un falso aviso, pero conviene verificar. Abrí el link para ver su última ubicación.</string>
+    <string name="sos_false_alarm_message">✅ Falsa alarma: %1$s confirmó que está bien. Gracias por estar pendiente.</string>
+
+    <!-- ── Errores ─────────────────────────────────────────────────────────── -->
+    <string name="error_generic">Algo salió mal. Volvé a intentar.</string>
+    <string name="error_network">Sin conexión a internet.</string>
+    <string name="error_location">No pudimos obtener tu ubicación. Revisá que el GPS esté activo.</string>
+    <string name="error_backend">No pudimos comunicarnos con el servidor.</string>
+
+    <!-- ── Ajustes / privacidad ────────────────────────────────────────────── -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_privacy">Privacidad</string>
+    <string name="settings_privacy_body">El audio del Modo Escolta se procesa íntegramente en tu teléfono. Nunca se graba ni se transmite. Tu ubicación sólo se comparte con tus contactos de confianza cuando activás una emergencia.</string>
+    <string name="settings_alert_radius">Radio de alertas</string>
+    <string name="settings_delete_account">Eliminar mi cuenta y datos</string>
+    <string name="settings_delete_confirm">Esta acción borra tu cuenta y todos tus reportes de forma permanente.</string>
+    <!-- Mapa y rutas -->
+    <string name="map_risk_summary">%1$d reportes en esta zona</string>
+    <string name="map_no_neighborhood">Barrio sin identificar</string>
+    <string name="action_recenter">Centrar en mi ubicación</string>
+    <string name="action_report">Reportar incidente</string>
+    <string name="action_share">Compartir</string>
+    <string name="action_close">Cerrar</string>
+    <string name="tab_routes">Rutas</string>
+    <string name="tab_escort">Escolta</string>
+</resources>

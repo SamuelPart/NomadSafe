@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Tema XML mínimo: la UI real es 100% Jetpack Compose y su tema vive en
+      core/designsystem/theme/. Esto sólo cubre la ventana previa a Compose
+      (splash, colores de barras del sistema) para evitar el flash blanco.
+    -->
+    <style name="Theme.NomadSafe" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/ns_background_light</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <!-- Pantalla de arranque (androidx.core:core-splashscreen). -->
+    <style name="Theme.NomadSafe.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.NomadSafe</item>
+    </style>
+</resources>

@@ -1,0 +1,34 @@
+# Copiá este archivo como `local.properties` y completá los valores.
+# local.properties está en .gitignore: NUNCA se commitea.
+#
+#   cp local.properties.example local.properties
+
+# Ruta del SDK de Android. Android Studio la rellena solo.
+sdk.dir=/ruta/a/Android/Sdk
+
+# ── Mapbox ──────────────────────────────────────────────────────────────────
+# Son DOS tokens distintos y se confunden siempre:
+#
+# 1) SECRET DOWNLOADS TOKEN (scope Downloads:Read)
+#    Lo usa Gradle para DESCARGAR el SDK desde el Maven privado de Mapbox.
+#    Empieza con "sk.".
+MAPBOX_DOWNLOADS_TOKEN=sk.tu_secret_downloads_token
+
+# 2) PUBLIC TOKEN
+#    Lo usa la APP en runtime para pedir estilos, tiles y direcciones.
+#    Empieza con "pk.".
+MAPBOX_PUBLIC_TOKEN=pk.tu_public_token
+
+# ── Supabase ────────────────────────────────────────────────────────────────
+# Project Settings > API
+SUPABASE_URL=https://tu-proyecto.supabase.co
+# La anon key es pública por diseño: se ofusca en el cliente y la seguridad real
+# la dan las políticas RLS (ver supabase/migrations/). NO usar la service_role key.
+SUPABASE_ANON_KEY=eyJhbGciOi...
+
+# ── Piloto ──────────────────────────────────────────────────────────────────
+# Ciudad del piloto. Define el viewport inicial del mapa y el área de descarga
+# de features estáticas de OpenStreetMap.
+NOMADSAFE_PILOT_CITY=Trujillo
+NOMADSAFE_PILOT_LAT=-8.1116
+NOMADSAFE_PILOT_LON=-79.0289

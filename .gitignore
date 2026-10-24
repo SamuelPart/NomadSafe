@@ -1,0 +1,54 @@
+# ── Gradle / Android ────────────────────────────────────────────────────────
+.gradle/
+build/
+*/build/
+app/release/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+out/
+
+# ── Secrets: jamás al repo ──────────────────────────────────────────────────
+local.properties
+keystore.properties
+*.jks
+*.keystore
+google-services.json
+service_account.json
+supabase/.temp/
+.env
+.env.*
+!.env.example
+
+# ── Modelo de voz Vosk (~40 MB, se descarga en runtime) ─────────────────────
+# Ver docs/OFFLINE_VOICE.md. Se ignora el modelo, no el código que lo gestiona.
+app/src/main/assets/vosk-model*/
+models/*.zip
+
+# ── Android Studio / IntelliJ ───────────────────────────────────────────────
+.idea/
+!.idea/codeStyles/
+*.iml
+.navigation/
+output.json
+
+# ── Node / Deno (Supabase Edge Functions) ───────────────────────────────────
+node_modules/
+supabase/functions/**/node_modules/
+deno.lock
+
+# ── macOS / Windows / Linux ─────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Cobertura y profiling ───────────────────────────────────────────────────
+coverage/
+*.hprof
+baseline-prof.txt

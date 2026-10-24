@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Paleta de marca. Los valores que usa Compose están en
+         core/designsystem/theme/Color.kt; éstos son sólo para el tema XML del
+         sistema (splash, status bar) que corre antes de que Compose exista. -->
+    <color name="ns_primary">#0F6FFF</color>
+    <color name="ns_primary_dark">#0A4FBE</color>
+    <color name="ns_secondary">#00D3A7</color>
+    <color name="ns_danger">#FF3B30</color>
+    <color name="ns_warning">#FFB020</color>
+    <color name="ns_safe">#34C759</color>
+    <color name="ns_background_light">#F5F7FB</color>
+    <color name="ns_background_dark">#0A0E1A</color>
+    <color name="ns_surface_dark">#121829</color>
+    <color name="ns_on_background_light">#0A0E1A</color>
+    <color name="ns_on_background_dark">#E8ECF5</color>
+
+    <!-- Fondo del adaptive icon: azul noche, alto contraste con el escudo lima. -->
+    <color name="ic_launcher_background">#0A1B3D</color>
+</resources>
