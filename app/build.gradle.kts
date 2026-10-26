@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 /*
@@ -15,7 +16,12 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 // Ninguno de estos valores es un secreto real (ver docs/SECURITY_PRIVACY.md):
 //   - la anon key de Supabase es pública por diseño; la seguridad vive en RLS.
 //   - el mapa no lleva credencial alguna: MapLibre + OpenStreetMap no usan tokens.
-val localProperties = java.util.Properties().apply {
+// Se usa `Properties` importado y NO `java.util.Properties()` calificado: en un
+// script .gradle.kts el identificador `java` lo captura el accessor de la
+// extensión del plugin (JavaPluginExtension), no el paquete de Java, así que la
+// forma calificada no resuelve y revienta la configuración con "Unresolved
+// reference 'util'". El import explícito es la única forma inequívoca.
+val localProperties = Properties().apply {
     val file = rootProject.file("local.properties")
     if (file.exists()) file.inputStream().use { load(it) }
 }
@@ -78,8 +84,14 @@ android {
         buildConfigField("double", "PILOT_LAT", config("NOMADSAFE_PILOT_LAT", "-8.1116"))
         buildConfigField("double", "PILOT_LON", config("NOMADSAFE_PILOT_LON", "-79.0289"))
 
-        // Idioma por defecto del piloto. Las traducciones viven en values-es / values-en.
-        resourceConfigurations += listOf("es", "en")
+    }
+
+    // Idiomas que se empaquetan. Las traducciones viven en values/ (es, default) y
+    // values-en/. En AGP 9 `resourceConfigurations` dentro de defaultConfig quedó
+    // deprecado y se movió a androidResources.localeFilters; dejar el viejo hace
+    // fallar la configuración del script, no sólo avisar.
+    androidResources {
+        localeFilters += listOf("es", "en")
     }
 
     buildTypes {
