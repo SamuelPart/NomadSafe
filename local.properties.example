@@ -6,18 +6,6 @@
 # Ruta del SDK de Android. Android Studio la rellena solo.
 sdk.dir=/ruta/a/Android/Sdk
 
-# ── Mapbox ──────────────────────────────────────────────────────────────────
-# Son DOS tokens distintos y se confunden siempre:
-#
-# 1) SECRET DOWNLOADS TOKEN (scope Downloads:Read)
-#    Lo usa Gradle para DESCARGAR el SDK desde el Maven privado de Mapbox.
-#    Empieza con "sk.".
-MAPBOX_DOWNLOADS_TOKEN=sk.tu_secret_downloads_token
-
-# 2) PUBLIC TOKEN
-#    Lo usa la APP en runtime para pedir estilos, tiles y direcciones.
-#    Empieza con "pk.".
-MAPBOX_PUBLIC_TOKEN=pk.tu_public_token
 
 # ── Supabase ────────────────────────────────────────────────────────────────
 # Project Settings > API

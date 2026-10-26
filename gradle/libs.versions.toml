@@ -10,7 +10,7 @@
 #     Se elige 3.6.0 (compilado con Kotlin 2.3.21) y NO 3.8.0 (compilado con Kotlin 2.4.0)
 #     porque el binario de una librería sólo es legible por un compilador del mismo minor.
 #     Kotlin 2.3.0 lee metadata 2.3.x; no leería metadata 2.4.x.
-#   * Mapbox 11.33.0 -> tags de mapbox/mapbox-maps-android.
+#   * MapLibre 13.7.1 -> tags de maplibre/maplibre-native (android-v13.7.1).
 #   * Vosk 0.3.75 + JNA 5.18.1 -> alphacep/vosk-android-demo/app/build.gradle.
 #   * Firebase BoM 33.7.0 / gms plugin 4.4.4 -> nowinandroid. Se usan en la integración FCM
 #     de Fase 2 (ver docs/PUSH_NOTIFICATIONS.md); el scaffold compila sin ellas.
@@ -52,7 +52,7 @@ supabase = "3.6.0"
 ktor = "3.4.3"
 
 # --- Mapas ---
-mapbox = "1.33.0"
+maplibre = "13.7.1"
 
 # --- Voz offline (detección de palabras de pánico) ---
 vosk = "0.3.75"
@@ -135,9 +135,11 @@ supabase-functions = { group = "io.github.jan-tennert.supabase", name = "functio
 # línea de versión que usa supabase-kt para evitar conflictos de resolución.
 ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }
 
-# Mapbox Maps SDK v11. Trae mapbox-sdk-geojson como dependencia `api`,
-# por eso no se declara geojson/turf aquí (evita conflictos de versión).
-mapbox-maps-android = { group = "com.mapbox.maps", name = "android", version.ref = "mapbox" }
+# MapLibre GL Native: el fork open source (BSD) del render de Mapbox.
+# No requiere cuenta ni token: el SDK está en Maven Central y los tiles se
+# piden directo a OpenStreetMap. Trae org.maplibre.geojson como dependencia
+# `api`, así que Point/Feature/FeatureCollection ya están disponibles.
+maplibre-android = { group = "org.maplibre.gl", name = "android-sdk", version.ref = "maplibre" }
 
 # Vosk: reconocimiento de voz 100% offline (Apache-2.0).
 # El `@aar` replica la declaración del demo oficial y evita resolver JNA como .jar.

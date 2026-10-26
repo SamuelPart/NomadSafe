@@ -6,7 +6,7 @@ import androidx.work.Configuration
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import com.mapbox.maps.MapboxOptions
+import org.maplibre.android.MapLibre
 import com.nomadsafe.app.core.config.AppConfig
 import com.nomadsafe.app.core.util.NsLog
 import com.nomadsafe.app.data.sync.OutboxSyncManager
@@ -52,7 +52,7 @@ class NomadSafeApplication : Application(), Configuration.Provider {
         super.onCreate()
 
         configureLogging()
-        configureMapbox()
+        configureMapLibre()
 
         // Los canales de notificación deben existir antes de que cualquier servicio
         // intente publicar. Crearlos acá es idempotente y barato.
@@ -63,27 +63,17 @@ class NomadSafeApplication : Application(), Configuration.Provider {
     }
 
     /**
-     * Configura el token de Mapbox por código.
+     * Inicializa MapLibre antes de que exista ningún MapView.
      *
-     * Se hace acá y no con el recurso `R.string.mapbox_access_token` por dos
-     * razones: el token viene de `local.properties` (no debe estar versionado) y
-     * `resValues` está desactivado globalmente en gradle.properties.
-     *
-     * Sin token, el SDK lanza al primer `MapView`. Por eso se valida y se registra
-     * un aviso claro en vez de dejar que falle más adelante con un error críptico.
+     * `MapLibre.getInstance(context)` es obligatorio: sin él, el primer MapView
+     * lanza una IllegalStateException críptica. No hay token que configurar — esa
+     * es justamente la diferencia con el SDK propietario que reemplazamos: el
+     * render es open source y los tiles se piden a OpenStreetMap sin credenciales.
      */
-    private fun configureMapbox() {
-        if (!appConfig.hasMapCredentials) {
-            NsLog.w(
-                TAG,
-                "MAPBOX_PUBLIC_TOKEN no configurado: el mapa no dibujará tiles. " +
-                    "Agregalo en local.properties (ver docs/SETUP.md).",
-            )
-            return
-        }
-        runCatching { MapboxOptions.accessToken = appConfig.mapboxPublicToken }
-            .onSuccess { NsLog.i(TAG, "Token de Mapbox configurado") }
-            .onFailure { NsLog.e(TAG, "No se pudo configurar Mapbox", it) }
+    private fun configureMapLibre() {
+        runCatching { MapLibre.getInstance(this) }
+            .onSuccess { NsLog.i(TAG, "MapLibre inicializado (sin credenciales requeridas)") }
+            .onFailure { NsLog.e(TAG, "No se pudo inicializar MapLibre", it) }
     }
 
     /**

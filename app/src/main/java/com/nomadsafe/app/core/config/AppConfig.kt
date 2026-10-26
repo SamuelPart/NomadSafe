@@ -14,17 +14,16 @@ import com.nomadsafe.app.domain.model.GeoPoint
  *     falsos sin tocar BuildConfig, que es estático y no se puede mockear.
  *  2. Un único lugar donde decidir "¿hay credenciales reales o corro en modo
  *     demo?". Esa decisión la toman [hasBackendCredentials] y
- *     [hasMapCredentials], y de ella dependen los bindings de Hilt.
+ *     [hasBackendCredentials], y de ella dependen los bindings de Hilt.
  *
- * Sobre secretos: la anon key de Supabase y el public token de Mapbox son
- * credenciales PÚBLICAS por diseño de ambos proveedores. Van embebidas en el
- * cliente y la protección real es otra: RLS en Postgres y restricción por
- * paquete+firma en Mapbox. Ver docs/SECURITY_PRIVACY.md.
+ * Sobre secretos: la anon key de Supabase es una credencial PÚBLICA por diseño
+ * del proveedor; va embebida en el cliente y la protección real son las políticas
+ * RLS en Postgres. El mapa no lleva ninguna credencial: MapLibre y OpenStreetMap
+ * no usan tokens. Ver docs/SECURITY_PRIVACY.md.
  */
 data class AppConfig(
     val supabaseUrl: String,
     val supabaseAnonKey: String,
-    val mapboxPublicToken: String,
     val pilotCity: String,
     val pilotCenter: GeoPoint,
     val isFcmEnabled: Boolean,
@@ -39,10 +38,6 @@ data class AppConfig(
     val hasBackendCredentials: Boolean
         get() = supabaseUrl.isNotBlank() && supabaseAnonKey.isNotBlank()
 
-    /** Sin token de Mapbox el mapa no dibuja tiles; se muestra el aviso correspondiente. */
-    val hasMapCredentials: Boolean
-        get() = mapboxPublicToken.isNotBlank()
-
     /**
      * La app corre "en vacío" cuando no hay backend. Se expone para mostrar un
      * banner honesto al usuario en vez de que vea spinners eternos.
@@ -55,7 +50,6 @@ data class AppConfig(
         fun fromBuildConfig(): AppConfig = AppConfig(
             supabaseUrl = BuildConfig.SUPABASE_URL,
             supabaseAnonKey = BuildConfig.SUPABASE_ANON_KEY,
-            mapboxPublicToken = BuildConfig.MAPBOX_PUBLIC_TOKEN,
             pilotCity = BuildConfig.PILOT_CITY,
             pilotCenter = GeoPoint(
                 latitude = BuildConfig.PILOT_LAT,

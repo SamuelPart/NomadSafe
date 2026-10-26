@@ -17,6 +17,7 @@ import com.nomadsafe.app.domain.repository.TravelMode
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import java.net.HttpURLConnection
 import java.net.URL
@@ -31,22 +32,30 @@ import kotlin.math.roundToInt
  * ── Separación deliberada ────────────────────────────────────────────────────
  * Esta clase devuelve rutas por tiempo y distancia. NO sabe nada de seguridad:
  * todo el criterio de riesgo lo aplica `RiskEngine` encima. La consecuencia
- * práctica es que NomadSafe no queda atado a Mapbox — se puede cambiar a OSRM o
- * Valhalla autohospedado, o mezclar candidatos de dos proveedores, sin tocar el
+ * práctica es que NomadSafe no queda atado a un proveedor: se puede cambiar a
+ * Valhalla autohospedado o mezclar candidatos de dos orígenes sin tocar el
  * diferencial del producto.
  *
- * ── Por qué llamada HTTP directa y no el SDK de Directions ───────────────────
- * El SDK oficial (`mapbox-sdk-services`) agrega una dependencia con su propia
- * línea de versiones y su propio cliente Retrofit. Para un solo endpoint, una
- * llamada HTTP con kotlinx-serialization es menos superficie de fallo y mantiene
- * el control sobre timeouts y reintentos, que acá importan porque el usuario está
- * parado en una esquina esperando la ruta.
+ * ── Proveedores abiertos y sin credenciales ──────────────────────────────────
+ * Routing: instancias públicas de OSRM mantenidas por FOSSGIS
+ * (routing.openstreetmap.de), con perfiles a pie / bici / auto. Geocodificación:
+ * Nominatim, el buscador oficial de OpenStreetMap. Ninguno de los dos pide token
+ * ni cuenta; ambos piden respetar su política de uso (User-Agent identificable y
+ * volumen moderado), que es lo que cumple [openNominatim].
  *
- * ── Fallback sin token ───────────────────────────────────────────────────────
- * Sin token de Mapbox se generan rutas sintéticas: línea directa más dos
- * variantes desviadas. No sirven para navegar en serio, pero permiten ejercitar
- * TODO el pipeline de riesgo (scoring, ranking, explicación, UI) sin credenciales.
- * Es lo que hace que el proyecto sea demo-able desde el primer clon.
+ * ── Por qué llamada HTTP directa y no un SDK ─────────────────────────────────
+ * Un SDK de routing agrega una dependencia con su propia línea de versiones y su
+ * propio cliente Retrofit. Para tres endpoints, una llamada HTTP con
+ * kotlinx-serialization es menos superficie de fallo y mantiene el control sobre
+ * timeouts, que acá importan porque el usuario está parado en una esquina
+ * esperando la ruta.
+ *
+ * ── Fallback ante caída ──────────────────────────────────────────────────────
+ * Si el routing público no responde se generan rutas sintéticas: línea directa
+ * más dos variantes desviadas. No sirven para navegar en serio, pero permiten
+ * ejercitar TODO el pipeline de riesgo (scoring, ranking, explicación, UI) sin
+ * red. Es lo que hace que el proyecto sea demo-able desde el primer clon y que un
+ * usuario parado en una esquina siempre obtenga ALGO.
  */
 @Singleton
 class RouteRepositoryImpl @Inject constructor(
@@ -78,16 +87,11 @@ class RouteRepositoryImpl @Inject constructor(
             )
         }
 
-        if (!config.hasMapCredentials) {
-            NsLog.w(TAG, "Sin token de Mapbox: se generan rutas sintéticas de demostración")
-            return NsResult.Success(syntheticRoutes(origin, destination, alternatives))
-        }
-
         return withContext(dispatchers.io) {
             try {
-                val routes = fetchFromMapbox(origin, destination, mode, alternatives)
+                val routes = fetchFromOsm(origin, destination, mode, alternatives)
                 if (routes.isEmpty()) {
-                    NsLog.w(TAG, "Mapbox no devolvió rutas; se usa el generador sintético")
+                    NsLog.w(TAG, "OSRM no devolvió rutas; se usa el generador sintético")
                     NsResult.Success(syntheticRoutes(origin, destination, alternatives))
                 } else {
                     NsResult.Success(routes)
@@ -95,7 +99,7 @@ class RouteRepositoryImpl @Inject constructor(
             } catch (cancellation: kotlinx.coroutines.CancellationException) {
                 throw cancellation
             } catch (throwable: Throwable) {
-                NsLog.e(TAG, "Fallo al pedir rutas a Mapbox; se degrada a sintéticas", throwable)
+                NsLog.e(TAG, "Fallo al pedir rutas a OSRM; se degrada a sintéticas", throwable)
                 // Degradar en vez de fallar: el usuario parado en una esquina
                 // necesita UNA ruta, aunque sea aproximada.
                 NsResult.Success(syntheticRoutes(origin, destination, alternatives))
@@ -103,49 +107,49 @@ class RouteRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun fetchFromMapbox(
+    private suspend fun fetchFromOsm(
         origin: GeoPoint,
         destination: GeoPoint,
         mode: TravelMode,
         alternatives: Int,
     ): List<CandidateRoute> {
-        val profile = when (mode) {
-            TravelMode.WALKING -> "mapbox/walking"
-            TravelMode.CYCLING -> "mapbox/cycling"
-            TravelMode.DRIVING -> "mapbox/driving"
+        val instance = when (mode) {
+            TravelMode.WALKING -> OSRM_INSTANCE_FOOT
+            TravelMode.CYCLING -> OSRM_INSTANCE_BIKE
+            TravelMode.DRIVING -> OSRM_INSTANCE_CAR
         }
 
-        // Mapbox usa orden (longitud,latitud), al revés que GeoPoint. Invertirlo
-        // acá produce rutas "válidas" en medio del océano sin ningún error.
+        // OSRM (esquema v5, el mismo que heredó Mapbox Directions) usa orden
+        // (longitud,latitud), al revés que GeoPoint. Invertirlo acá produce rutas
+        // "válidas" en medio del océano sin ningún error.
         val coordinates = "${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}"
 
         val url = URL(
-            "$DIRECTIONS_BASE_URL/$profile/$coordinates" +
+            "$OSRM_BASE_URL/$instance/route/v1/driving/$coordinates" +
                 "?alternatives=${alternatives > 1}" +
                 "&steps=true" +
                 "&geometries=geojson" +
-                "&overview=full" +
-                "&language=es" +
-                "&access_token=${config.mapboxPublicToken}",
+                "&overview=full",
         )
 
         val connection = url.openConnection() as HttpURLConnection
         connection.connectTimeout = CONNECT_TIMEOUT_MS
         connection.readTimeout = READ_TIMEOUT_MS
         connection.setRequestProperty("Accept", "application/json")
+        connection.setRequestProperty("User-Agent", USER_AGENT)
 
         return try {
             val code = connection.responseCode
             if (code !in 200..299) {
                 val body = connection.errorStream?.bufferedReader()?.readText().orEmpty()
-                throw IllegalStateException("Mapbox Directions HTTP $code: ${body.take(300)}")
+                throw IllegalStateException("OSRM HTTP $code: ${body.take(300)}")
             }
 
             val body = connection.inputStream.bufferedReader().use { it.readText() }
             val response = json.decodeFromString(DirectionsResponse.serializer(), body)
 
             if (response.code != "Ok") {
-                throw IllegalStateException("Mapbox Directions devolvió code='${response.code}'")
+                throw IllegalStateException("OSRM devolvió code='${response.code}'")
             }
 
             response.routes.mapIndexed { index, route ->
@@ -157,11 +161,11 @@ class RouteRepositoryImpl @Inject constructor(
                     .filter { it.lengthMeters > MIN_SEGMENT_LENGTH_METERS }
 
                 CandidateRoute(
-                    id = route.idOrNull ?: "mapbox-$index",
+                    id = "osrm-$index",
                     segments = segments,
                     durationSeconds = route.duration.roundToInt(),
                     distanceMeters = route.distance,
-                    isFastest = index == 0, // Mapbox ordena por duración ascendente.
+                    isFastest = index == 0, // OSRM ordena por duración ascendente.
                 )
             }.filter { it.segments.isNotEmpty() }
         } finally {
@@ -169,7 +173,7 @@ class RouteRepositoryImpl @Inject constructor(
         }
     }
 
-    /** Convierte un paso de Directions en un tramo evaluable por el motor de riesgo. */
+    /** Convierte un paso del esquema OSRM v5 en un tramo evaluable por el motor de riesgo. */
     private fun DirectionStep.toRouteSegment(): RouteSegment? {
         val coordinates = geometry?.coordinates ?: return null
         if (coordinates.size < 2) return null
@@ -177,7 +181,7 @@ class RouteRepositoryImpl @Inject constructor(
         val first = coordinates.first()
         val last = coordinates.last()
 
-        // Directions no informa clase de vía ni iluminación para perfil peatonal.
+        // OSRM no informa clase de vía ni iluminación para perfil peatonal.
         // Se deja UNKNOWN y null: [enrichWithStaticFeatures] los completa desde
         // OSM. Asumir "residencial" acá sesgaría el score a favor de avenidas.
         return RouteSegment(
@@ -243,25 +247,19 @@ class RouteRepositoryImpl @Inject constructor(
         return "%.4f:%.4f".format(cellLat, cellLon)
     }
 
-    override suspend fun reverseGeocode(point: GeoPoint): NsResult<String> {
-        if (!config.hasMapCredentials) {
-            return NsResult.Success(formatCoordinates(point))
-        }
-        return withContext(dispatchers.io) {
+    override suspend fun reverseGeocode(point: GeoPoint): NsResult<String> =
+        withContext(dispatchers.io) {
             runCatching {
                 val url = URL(
-                    "$GEOCODING_BASE_URL/mapbox.places/${point.longitude},${point.latitude}.json" +
-                        "?types=address,poi&limit=1&language=es" +
-                        "&access_token=${config.mapboxPublicToken}",
+                    "$NOMINATIM_BASE_URL/reverse?format=jsonv2" +
+                        "&lat=${point.latitude}&lon=${point.longitude}&zoom=18",
                 )
-                val connection = url.openConnection() as HttpURLConnection
-                connection.connectTimeout = CONNECT_TIMEOUT_MS
-                connection.readTimeout = READ_TIMEOUT_MS
+                val connection = openNominatim(url)
                 try {
                     if (connection.responseCode !in 200..299) throw IllegalStateException("HTTP ${connection.responseCode}")
                     val body = connection.inputStream.bufferedReader().use { it.readText() }
-                    val response = json.decodeFromString(GeocodingResponse.serializer(), body)
-                    response.features.firstOrNull()?.placeName ?: formatCoordinates(point)
+                    json.decodeFromString(NominatimReverse.serializer(), body).displayName
+                        ?: formatCoordinates(point)
                 } finally {
                     connection.disconnect()
                 }
@@ -273,42 +271,35 @@ class RouteRepositoryImpl @Inject constructor(
                 },
             )
         }
-    }
 
     override suspend fun searchDestination(
         query: String,
         bias: GeoPoint?,
     ): NsResult<List<DestinationSuggestion>> {
         if (query.isBlank() || query.length < MIN_QUERY_LENGTH) return NsResult.Success(emptyList())
-        if (!config.hasMapCredentials) return NsResult.Failure(NsError.Local("Búsqueda de destinos requiere token de Mapbox"))
 
         return withContext(dispatchers.io) {
             runCatching {
                 val encoded = java.net.URLEncoder.encode(query, Charsets.UTF_8.name())
-                val proximity = bias?.let { "&proximity=${it.longitude},${it.latitude}" } ?: ""
+
+                // viewbox + bounded acota la búsqueda al área del piloto. Sin eso,
+                // "plaza" devolvería plazas de todo el mundo y el usuario tendría
+                // que pescar la suya entre resultados de otros continentes.
+                val viewbox = bias?.let {
+                    val pad = VIEWBOX_PADDING_DEGREES
+                    "&viewbox=${it.longitude - pad},${it.latitude + pad}," +
+                        "${it.longitude + pad},${it.latitude - pad}&bounded=1"
+                } ?: ""
+
                 val url = URL(
-                    "$GEOCODING_BASE_URL/mapbox.places/$encoded.json" +
-                        "?types=address,poi,neighborhood&limit=8&language=es$proximity" +
-                        "&access_token=${config.mapboxPublicToken}",
+                    "$NOMINATIM_BASE_URL/search?format=jsonv2&limit=8&addressdetails=0&q=$encoded$viewbox",
                 )
-                val connection = url.openConnection() as HttpURLConnection
-                connection.connectTimeout = CONNECT_TIMEOUT_MS
-                connection.readTimeout = READ_TIMEOUT_MS
+                val connection = openNominatim(url)
                 try {
                     if (connection.responseCode !in 200..299) throw IllegalStateException("HTTP ${connection.responseCode}")
                     val body = connection.inputStream.bufferedReader().use { it.readText() }
-                    json.decodeFromString(GeocodingResponse.serializer(), body).features.mapNotNull { feature ->
-                        val coordinates = feature.center ?: return@mapNotNull null
-                        if (coordinates.size < 2) return@mapNotNull null
-                        DestinationSuggestion(
-                            name = feature.text ?: feature.placeName ?: return@mapNotNull null,
-                            address = feature.placeName,
-                            location = GeoPoint(latitude = coordinates[1], longitude = coordinates[0]),
-                            distanceFromBiasMeters = bias?.let {
-                                GeoUtils.distanceMeters(it, GeoPoint(coordinates[1], coordinates[0]))
-                            },
-                        )
-                    }
+                    json.decodeFromString(ListSerializer(NominatimResult.serializer()), body)
+                        .mapNotNull { result -> result.toSuggestion(bias) }
                 } finally {
                     connection.disconnect()
                 }
@@ -323,7 +314,42 @@ class RouteRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Rutas sintéticas para modo demo y para degradación ante fallo de Mapbox.
+     * Conexión a Nominatim con el User-Agent que exige su política de uso.
+     *
+     * No es una formalidad: Nominatim responde 403 a clientes sin User-Agent
+     * identificable, y ese fallo se vería desde la app como "no se encontró tu
+     * búsqueda" cuando en realidad es un rechazo del servidor.
+     */
+    private fun openNominatim(url: URL): HttpURLConnection =
+        (url.openConnection() as HttpURLConnection).apply {
+            connectTimeout = CONNECT_TIMEOUT_MS
+            readTimeout = READ_TIMEOUT_MS
+            setRequestProperty("Accept", "application/json")
+            setRequestProperty("User-Agent", USER_AGENT)
+        }
+
+    /**
+     * Convierte un resultado de Nominatim en sugerencia.
+     *
+     * Nominatim devuelve lat/lon como STRING, no como número (herencia de su API
+     * histórica). Parsearlos con `toDoubleOrNull` y descartar lo inválido es lo que
+     * evita que un resultado malformado reviente toda la lista de sugerencias.
+     */
+    private fun NominatimResult.toSuggestion(bias: GeoPoint?): DestinationSuggestion? {
+        val lat = lat?.toDoubleOrNull() ?: return null
+        val lon = lon?.toDoubleOrNull() ?: return null
+        val label = name ?: displayName?.substringBefore(',') ?: return null
+
+        return DestinationSuggestion(
+            name = label,
+            address = displayName,
+            location = GeoPoint(latitude = lat, longitude = lon),
+            distanceFromBiasMeters = bias?.let { GeoUtils.distanceMeters(it, GeoPoint(lat, lon)) },
+        )
+    }
+
+    /**
+     * Rutas sintéticas para modo demo y para degradación ante caída del routing.
      *
      * Genera una línea directa y dos variantes desviadas a ambos lados, con
      * duraciones coherentes a velocidad de caminata. No son navegables en serio,
@@ -386,7 +412,7 @@ class RouteRepositoryImpl @Inject constructor(
     private fun formatCoordinates(point: GeoPoint): String =
         "%.5f, %.5f".format(point.latitude, point.longitude)
 
-    // ── DTOs de la API de Mapbox ──────────────────────────────────────────────
+    // ── DTOs del esquema OSRM v5 (routing) ────────────────────────────────────
 
     @Serializable
     private data class DirectionsResponse(
@@ -399,11 +425,7 @@ class RouteRepositoryImpl @Inject constructor(
         @SerialName("duration") val duration: Double = 0.0,
         @SerialName("distance") val distance: Double = 0.0,
         @SerialName("legs") val legs: List<DirectionLeg> = emptyList(),
-        // Mapbox no devuelve un id estable; se usa la geometría como identidad.
-        @SerialName("weight_name") val weightName: String? = null,
-    ) {
-        val idOrNull: String? get() = weightName?.let { "mapbox-$it" }
-    }
+    )
 
     @Serializable
     private data class DirectionLeg(val steps: List<DirectionStep> = emptyList())
@@ -422,20 +444,42 @@ class RouteRepositoryImpl @Inject constructor(
         val coordinates: List<List<Double>> = emptyList(),
     )
 
-    @Serializable
-    private data class GeocodingResponse(val features: List<GeocodingFeature> = emptyList())
+    // ── DTOs de Nominatim ─────────────────────────────────────────────────────
 
     @Serializable
-    private data class GeocodingFeature(
-        val text: String? = null,
-        @SerialName("place_name") val placeName: String? = null,
-        val center: List<Double>? = null,
+    private data class NominatimReverse(
+        @SerialName("display_name") val displayName: String? = null,
+    )
+
+    @Serializable
+    private data class NominatimResult(
+        val name: String? = null,
+        @SerialName("display_name") val displayName: String? = null,
+        /** Nominatim devuelve coordenadas como string, no como número. */
+        val lat: String? = null,
+        val lon: String? = null,
     )
 
     private companion object {
         const val TAG = "RouteRepository"
-        const val DIRECTIONS_BASE_URL = "https://api.mapbox.com/directions/v5"
-        const val GEOCODING_BASE_URL = "https://api.mapbox.com/geocoding/v5"
+
+        /** Instancias públicas de OSRM mantenidas por FOSSGIS, sin token. */
+        const val OSRM_BASE_URL = "https://routing.openstreetmap.de"
+        const val OSRM_INSTANCE_FOOT = "routed-foot"
+        const val OSRM_INSTANCE_BIKE = "routed-bike"
+        const val OSRM_INSTANCE_CAR = "routed-car"
+
+        /** Buscador / geocodificador oficial de OpenStreetMap, sin token. */
+        const val NOMINATIM_BASE_URL = "https://nominatim.openstreetmap.org"
+
+        /**
+         * User-Agent identificable, exigido por la política de uso de Nominatim y
+         * esperado por las instancias OSRM públicas.
+         */
+        const val USER_AGENT = "NomadSafe/0.1 (app Android de seguridad ciudadana; contacto: samuel@nomadsafe.app)"
+
+        /** ~400 m en grados: recorte del viewbox de búsqueda al área del piloto. */
+        const val VIEWBOX_PADDING_DEGREES = 0.05
 
         const val CONNECT_TIMEOUT_MS = 8_000
         const val READ_TIMEOUT_MS = 12_000

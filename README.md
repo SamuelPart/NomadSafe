@@ -25,7 +25,7 @@ Implementado:
 - ✅ **Detección de pánico por voz** — Vosk offline en español, matcher con distancia de Levenshtein y gramática acotada
 - ✅ **Capa de datos local-first** — Room como fuente de verdad, outbox con backoff exponencial, sincronización por WorkManager
 - ✅ **Supabase** — gateway, DTOs, Realtime, Auth por OTP telefónico, Edge Functions
-- ✅ **Mapa** — Mapbox v11 con heatmap ponderado por severidad, capas conmutables, hotspots
+- ✅ **Mapa** — MapLibre (open source, sin token) con heatmap ponderado por severidad, capas conmutables, hotspots
 - ✅ **Backend SQL** — migración completa con PostGIS, RLS en todas las tablas, funciones de riesgo y hotspots
 - ✅ **Loop de crecimiento** — builder de contenido compartible, códigos de referido, mensajes de SOS
 
@@ -84,8 +84,7 @@ La etiqueta de riesgo del mapa y el score que evita tramos al trazar una ruta us
 
 - **Android Studio** con **JDK 17** o superior (el build lo verifica y falla con un mensaje claro si no)
 - **Android SDK 37** (compileSdk) y un dispositivo o emulador con **API 26+**
-- Un proyecto en [Supabase](https://supabase.com)
-- Un token de descargas de [Mapbox](https://account.mapbox.com/access-tokens/)
+- Un proyecto en [Supabase](https://supabase.com) — *opcional para arrancar: sin credenciales la app corre en modo demo*
 
 ### 1. Configurar credenciales
 
@@ -98,8 +97,6 @@ Editar `local.properties`:
 ```properties
 SUPABASE_URL=https://tu-proyecto.supabase.co
 SUPABASE_ANON_KEY=tu-anon-key
-MAPBOX_PUBLIC_TOKEN=pk.xxx
-MAPBOX_DOWNLOADS_TOKEN=sk.xxx      # sólo para descargar dependencias
 PILOT_CITY=Trujillo
 PILOT_LAT=-8.1116
 PILOT_LON=-79.0287
@@ -107,11 +104,9 @@ PILOT_LON=-79.0287
 
 **Sin credenciales la app igual compila y corre** en modo demo: usa `MockLocationSource` y datos locales. Es deliberado — un clone del repo no debería necesitar cuatro cuentas de servicio para ver la arquitectura funcionar.
 
-`MAPBOX_DOWNLOADS_TOKEN` va además como variable de entorno si el build corre en CI:
-
-```bash
-export MAPBOX_DOWNLOADS_TOKEN=sk.xxx
-```
+El mapa **no lleva credenciales de ningún tipo**: el render es MapLibre (BSD) y los
+tiles, routing y geocodificación vienen de servidores públicos de OpenStreetMap
+(OSRM y Nominatim). Un clone fresco sincroniza sin configurar nada de eso.
 
 ### 2. Backend Supabase
 
@@ -170,7 +165,7 @@ app/src/main/java/com/nomadsafe/app/
 ├── feature/
 │   ├── risk/           RiskEngine, RiskConfig, HotspotDetector
 │   ├── escort/         Servicio en primer plano, StateHolder, SOS, pánico por voz
-│   ├── map/            ViewModel, pantalla, capas de Mapbox
+│   ├── map/            ViewModel, pantalla, capas de MapLibre
 │   ├── report/         Formulario de reporte
 │   ├── route/          Rutas seguras
 │   └── growth/         Contenido compartible, códigos de referido
@@ -179,7 +174,7 @@ app/src/main/java/com/nomadsafe/app/
 
 **Regla de dependencias:** `feature → domain ← data`. Las features nunca importan de `data`, y `domain` no importa de nadie.
 
-**Dos aislamientos deliberados.** Todo el código de Supabase vive en `data/remote/SupabaseGateway.kt` y todo el de Mapbox en `feature/map/MapboxLayers.kt`. No es limpieza estética: son los dos proveedores con mayor probabilidad de cambio de API, y confinarlos hace que una migración toque un archivo en vez de cuarenta.
+**Dos aislamientos deliberados.** Todo el código de Supabase vive en `data/remote/SupabaseGateway.kt` y todo el de MapLibre en `feature/map/MapLayers.kt`. No es limpieza estética: son los dos proveedores con mayor probabilidad de cambio de API, y confinarlos hace que una migración toque un archivo en vez de cuarenta.
 
 ### Flujo de un reporte
 
@@ -319,4 +314,4 @@ Detalle en [`docs/ROADMAP.md`](docs/ROADMAP.md). Decisiones técnicas y deuda co
 
 ## Licencia
 
-Código propietario. Dependencias principales: Mapbox Maps SDK (comercial), Vosk (Apache-2.0), Supabase (Apache-2.0), OpenStreetMap (ODbL — **requiere atribución** en cualquier producto derivado de `osm_static_features`).
+Código propietario. Dependencias principales: MapLibre GL Native (BSD), Vosk (Apache-2.0), Supabase (Apache-2.0), OpenStreetMap (ODbL — **requiere atribución** en cualquier producto derivado de `osm_static_features`; los tiles, routing OSRM y geocodificación Nominatim se usan bajo sus políticas de uso con User-Agent identificable).

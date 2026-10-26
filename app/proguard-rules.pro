@@ -42,11 +42,11 @@
 -dontwarn org.slf4j.**
 -dontwarn io.ktor.**
 
-# ── Mapbox ───────────────────────────────────────────────────────────────────
+# ── MapLibre ─────────────────────────────────────────────────────────────────
 # El SDK v11 carga nativos y usa Gson sobre modelos GeoJSON propios.
--keep class com.mapbox.** { *; }
--keep class com.mapbox.geojson.** { *; }
--dontwarn com.mapbox.**
+-keep class org.maplibre.** { *; }
+-keep class org.maplibre.geojson.** { *; }
+-dontwarn org.maplibre.**
 
 # ── Room ─────────────────────────────────────────────────────────────────────
 # Room genera impls en tiempo de compilación (vía KSP), pero las Entity se
