@@ -459,7 +459,7 @@ private fun Double.formatPercent(): String = "${(this * 100).toInt()}%"
  * Duración desde segundos.
  *
  * `CandidateRoute.durationSeconds` es un Int de segundos, no un `Duration`: viene
- * así del DTO de Mapbox Directions y convertirlo a Duration sólo para formatearlo
+ * así del DTO de routing (esquema OSRM v5) y convertirlo a Duration sólo para formatearlo
  * agregaría un tipo intermedio sin beneficio.
  */
 private fun Int.formatSeconds(): String = when {

@@ -7,12 +7,7 @@ import org.gradle.authentication.http.BasicAuthentication
  *
  * Dos decisiones importantes viven aquí:
  *
- * 1. Repositorio de Mapbox autenticado. Los artefactos de Mapbox Maps SDK v11 NO están en
- *    Maven Central: se descargan del Maven privado de Mapbox, que exige un "secret download
- *    token" distinto del token público que usa la app en runtime. Sin él, la resolución de
- *    dependencias falla con un 401 confuso. Ver docs/SETUP.md.
- *
- * 2. FAIL_ON_PROJECT_REPOS: todos los repositorios se declaran una sola vez aquí y ningún
+ * 1. FAIL_ON_PROJECT_REPOS: todos los repositorios se declaran una sola vez aquí y ningún
  *    módulo puede añadir los suyos. Evita el clásico bug de "funciona en mi máquina" cuando
  *    un repositorio se cuela sólo en un módulo.
  */
@@ -31,34 +26,6 @@ pluginManagement {
     }
 }
 
-// El token puede venir de gradle.properties, de -P en línea de comandos o del entorno.
-// Se lee en settings porque la resolución de dependencias ocurre antes que los módulos.
-val mapboxDownloadsToken: String = providers
-    .gradleProperty("MAPBOX_DOWNLOADS_TOKEN")
-    .orElse(providers.environmentVariable("MAPBOX_DOWNLOADS_TOKEN"))
-    .getOrElse("")
-
-if (mapboxDownloadsToken.isBlank()) {
-    logger.warn(
-        """
-
-        ╔══════════════════════════════════════════════════════════════════════╗
-        ║  NomadSafe: falta MAPBOX_DOWNLOADS_TOKEN                             ║
-        ║                                                                      ║
-        ║  La build fallará al resolver com.mapbox.maps:android con un 401.    ║
-        ║                                                                      ║
-        ║  1. Crea una cuenta en https://account.mapbox.com                    ║
-        ║  2. Copia el "Secret access token" (scope: Downloads:Read)           ║
-        ║  3. Pégalo en local.properties como MAPBOX_DOWNLOADS_TOKEN=sk.xxx     ║
-        ║     o en ~/.gradle/gradle.properties                                 ║
-        ║                                                                      ║
-        ║  Nota: ese token NUNCA se commitea. Ver docs/SETUP.md                ║
-        ╚══════════════════════════════════════════════════════════════════════╝
-
-        """.trimIndent(),
-    )
-}
-
 dependencyResolutionManagement {
     repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
     repositories {
@@ -70,20 +37,9 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
-        // Maven privado de Mapbox (Maps SDK v11, geojson transitivo).
-        maven {
-            name = "MapboxReleases"
-            url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
-            credentials {
-                // El usuario es literalmente "mapbox" para todos los clientes;
-                // lo que autentica es el secret token.
-                username = "mapbox"
-                password = mapboxDownloadsToken
-            }
-            authentication {
-                create<BasicAuthentication>("basic")
-            }
-        }
+        // Sin repositorios privados: todo el stack de mapa es open source
+        // (MapLibre en Maven Central + tiles raster de OpenStreetMap), así que
+        // un clone fresco del repo sincroniza sin configurar ninguna credencial.
     }
 }
 

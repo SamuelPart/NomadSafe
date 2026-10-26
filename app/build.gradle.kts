@@ -14,7 +14,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 // local.properties no es visible desde Gradle por defecto: se lee a mano.
 // Ninguno de estos valores es un secreto real (ver docs/SECURITY_PRIVACY.md):
 //   - la anon key de Supabase es pública por diseño; la seguridad vive en RLS.
-//   - el public token de Mapbox es público por diseño; se restringe por paquete+SHA1.
+//   - el mapa no lleva credencial alguna: MapLibre + OpenStreetMap no usan tokens.
 val localProperties = java.util.Properties().apply {
     val file = rootProject.file("local.properties")
     if (file.exists()) file.inputStream().use { load(it) }
@@ -67,7 +67,6 @@ android {
         // ── Configuración inyectada en tiempo de compilación ──────────────────
         buildConfigField("String", "SUPABASE_URL", "\"${config("SUPABASE_URL")}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${config("SUPABASE_ANON_KEY")}\"")
-        buildConfigField("String", "MAPBOX_PUBLIC_TOKEN", "\"${config("MAPBOX_PUBLIC_TOKEN")}\"")
         buildConfigField("boolean", "FCM_ENABLED", "$fcmEnabled")
         buildConfigField(
             "boolean",
@@ -111,8 +110,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
-        // ResValues apagado globalmente en gradle.properties; el token de Mapbox se
-        // setea por código (MapboxOptions.accessToken) en vez de por recurso.
+        // ResValues apagado globalmente en gradle.properties.
     }
 
     packaging {
@@ -209,10 +207,11 @@ dependencies {
     implementation(libs.bundles.supabase)
     implementation(libs.ktor.client.cio)
 
-    // ── Mapbox Maps SDK v11 ───────────────────────────────────────────────────
-    // Trae com.mapbox.mapboxsdk:mapbox-sdk-geojson como dependencia `api`,
-    // así que Point/Feature/FeatureCollection ya están disponibles.
-    implementation(libs.mapbox.maps.android)
+    // ── MapLibre GL Native ────────────────────────────────────────────────────
+    // Fork open source del render de Mapbox, sin cuenta ni token. Trae
+    // org.maplibre.geojson como dependencia `api`, así que Point/Feature/
+    // FeatureCollection ya están disponibles.
+    implementation(libs.maplibre.android)
 
     // ── Vosk: detección offline de palabras de pánico ─────────────────────────
     // El sufijo @aar replica la declaración del demo oficial de alphacep y evita

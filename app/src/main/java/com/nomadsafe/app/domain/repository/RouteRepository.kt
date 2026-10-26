@@ -20,7 +20,7 @@ enum class TravelMode(val wireName: String) {
  * cualquier engine de routing. NO sabe nada de seguridad. Todo el criterio de
  * riesgo vive en `RiskEngine`, que es código propio.
  *
- * La consecuencia práctica es que NomadSafe no está atado a Mapbox: se puede
+ * La consecuencia práctica es que NomadSafe no está atado a un proveedor: se puede
  * cambiar a OSRM o Valhalla autohospedado (o agregar un segundo proveedor y
  * mezclar candidatos) sin tocar una sola línea del motor de riesgo. El
  * diferencial del producto queda en casa, no en el proveedor.

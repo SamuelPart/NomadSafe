@@ -234,7 +234,7 @@ class RouteViewModel @Inject constructor(
             // 2. Enriquecido con features estáticas.
             // Si falla se continúa con lo que hay: saber que una calle está sin
             // luz es mejor que no tener ruta. El repositorio ya degrada a rutas
-            // sintéticas cuando no hay token de Mapbox, así que este fallo es poco
+            // sintéticas cuando el routing público no responde, así que este fallo es poco
             // frecuente y nunca debe bloquear al usuario que está parado en una
             // esquina necesitando saber por dónde ir.
             val enriched = when (val result = routeRepository.enrichWithStaticFeatures(candidates)) {

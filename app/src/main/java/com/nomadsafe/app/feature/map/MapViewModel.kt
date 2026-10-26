@@ -237,6 +237,17 @@ class MapViewModel @Inject constructor(
         )
     }
 
+    /**
+     * Selección por id, para el click sobre el mapa.
+     *
+     * El renderer devuelve el id de la feature tocada, no el objeto; resolverlo
+     * contra la lista ya cargada evita tener que serializar incidentes completos
+     * como propiedades GeoJSON sólo para poder mostrarlos al tocar.
+     */
+    fun selectIncidentById(incidentId: String) {
+        selectIncident(_uiState.value.incidents.firstOrNull { it.id == incidentId })
+    }
+
     fun selectIncident(incident: Incident?) {
         _uiState.value = _uiState.value.copy(selectedIncident = incident)
     }
